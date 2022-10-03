@@ -12,48 +12,48 @@ DS <- "Bittou"
 # outputdir <- file.path(projectdir, "simulation_output", "selected_particles")
 
 load_case_data <- function(projectdir) {
-  case_fname <- file.path(projectdir, 'burkina_cases', 
-                          'Cases_from_WHO', 
-                          'Donnees_Paludisme_jgcleaned.csv')
-  case_df <- data.table::fread(case_fname, encoding = "Latin-1")
-  case_df <- case_df %>%
-    select(DS_Name = `District/Admin2`, year = Année, month = Mois,
-           repincd = Incidence) %>%
-    na.omit()
+  case_fname <- file.path(projectdir, 'burkina_cases/routine_seb_agg_confpres.csv')
+  case_df <- data.table::fread(case_fname) %>% 
+    rename(date = Date, repincd = case) %>%
+    mutate(date = as.Date(date), year = year(date), 
+           month = month(date)) %>%
+    arrange(DS_Name, date)
   
   return(case_df)
 }
 
+rcases <- load_case_data(projectdir) %>%
+  filter(DS_Name == DS) %>%
+  filter(age == 'ov5')
 simcases <- data.table::fread(file.path(simoutdir, "U5_PfPR_ClinicalIncidence.csv"))
 simcases <- simcases %>%
   group_by(DS_Name, year, month) %>%
   summarise(simincd = mean(`Cases U5`)) %>%
   mutate(date = paste(year, month) %>% ym)
 
-simcases <- simcases %>%
+rcases1 <- rcases %>%
+  group_by(DS_Name, year) %>%
+  mutate(repincd = repincd/sum(repincd)) %>%
+  group_by(DS_Name, month) %>%
+  summarise(std_repincd = mean(repincd))
+
+simcases1 <- simcases %>%
   group_by(DS_Name, year) %>%
   mutate(simincd = simincd/sum(simincd)) %>%
   group_by(DS_Name, month) %>%
   summarise(std_simincd = mean(simincd))
 
-ggplot(simcases) +
+comb_df <- simcases1 %>%
+  left_join(rcases1, by = c("DS_Name", "month")) %>%
+  ungroup()
+
+# ggplot(comb_df) +
+#   geom_line(aes(x=date, y=repincd)) +
+#   geom_line(aes(x=date, y=simincd), col = "red") +
+#   scale_y_log10()
+
+ggplot(comb_df) +
+  geom_line(aes(x=month, y=std_repincd)) +
   geom_line(aes(x=month, y=std_simincd), col = "red") +
   scale_x_continuous(breaks = 1:12, minor_breaks = NULL)
 
-# comb_df1 %>%
-#   mutate(cs_repincd = cumsum(std_repincd),
-#          cs_simincd = cumsum(std_simincd)) %>%
-#   ggplot() +
-#   geom_line(aes(x=month, y=cs_repincd)) +
-#   geom_line(aes(x=month, y=cs_simincd), col = "red") +
-#   scale_x_continuous(breaks = 1:12, minor_breaks = NULL)
-
-# rcases %>%
-#   filter(year <= 2014) %>%
-#   group_by(DS_Name, year) %>%
-#   mutate(repincd = repincd/sum(repincd)) %>%
-#   group_by(DS_Name, month) %>%
-#   summarise(std_repincd = mean(repincd)) %>%
-#   ggplot() +
-#   geom_line(aes(x=month, y=std_repincd)) +
-#   scale_x_continuous(breaks = 1:12, minor_breaks = NULL)
