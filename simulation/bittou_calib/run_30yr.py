@@ -4,6 +4,7 @@ import time
 import pandas as pd
 from dtk.utils.core.DTKConfigBuilder import DTKConfigBuilder
 from malaria.interventions.health_seeking import add_health_seeking
+from malaria.reports.MalariaReport import add_event_counter_report
 from simtools.ExperimentManager.ExperimentManagerFactory import ExperimentManagerFactory
 from simtools.ModBuilder import ModBuilder, ModFn
 from simtools.SetupParser import SetupParser
@@ -26,7 +27,7 @@ def input_override(cb):
 
 SetupParser.default_block = 'NUCLUSTER'
 datapath, projectpath = load_box_paths(parser_default=SetupParser.default_block)
-larval_hab_csv = 'simulation_inputs/monthly_habitats_v4_fit.csv'
+larval_hab_csv = 'simulation_inputs/monthly_habitats_v4.csv'
 
 user = os.getlogin()
 expname = f'{user}_bittou_seasonal_calib'
@@ -45,14 +46,25 @@ cb.update_params({
 })
 
 # INTERVENTIONS
-add_health_seeking(cb, start_day=21*365,
+add_health_seeking(cb, start_day=5*365,
                    targets=[{'agemin': 0, 'agemax': 100,
-                             'coverage': 0.4, 'rate': 0.3, 'seek': 1,
+                             'coverage': 0.5, 'rate': 0.3, 'seek': 1,
                              'trigger': 'NewClinicalCase'}],
                    drug=['Artemether', 'Lumefantrine'])
 
 # REPORTS
 add_monthly_parasitemia_rep_by_year(cb, 3, years, 1986) # Report for year 2013, 2014, 2015
+#add_event_counter_report(cb, event_trigger_list=['Received_Treatment'], start=(years-3)*365)
+cb.update_params({'Report_Event_Recorder_Events': ['Received_Treatment'],
+                  'Report_Event_Recorder' : 1,
+                  'Report_Event_Recorder_Start_Day' : (years-3)*365,
+                  'Report_Event_Recorder_End_Day' : years*365,
+                  'Report_Event_Recorder_Min_Age_Years' : 0,
+                  'Report_Event_Recorder_Max_Age_Years' : 10,
+                  'Report_Event_Recorder_Individual_Properties' : [],
+                  'Report_Event_Recorder_Ignore_Events_In_List' : 0
+                 })
+
 # Simulation from 1986 to 2015 (30 years)
 
 # Important DFs

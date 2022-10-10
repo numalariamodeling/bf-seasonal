@@ -193,3 +193,41 @@ class MonthlyTreatedCasesAnalyzer(BaseAnalyzer):
         adf.to_csv(os.path.join(self.working_dir, 'All_Age_Monthly_Cases.csv'), index=False)
         print('Saving output at ' +  os.path.join(self.working_dir, 'All_Age_Monthly_Cases.csv'))
 
+
+class EventReporterAnalyzer(BaseAnalyzer):
+    '''
+    defines PfPR prevalence analyzer class
+    '''
+
+    def __init__(self, exp_name, sweep_variables=None, working_dir='./'):  # sweep_variables=None,
+
+        super(EventReporterAnalyzer, self).__init__(working_dir=working_dir,
+                                                    filenames=["output/ReportEventRecorder.csv"])
+        self.sweep_variables = sweep_variables
+        self.exp_name = exp_name
+
+    def select_simulation_data(self, data, simulation):
+
+        df = data[self.filenames[0]]
+
+        # add tags
+        for sweep_var in self.sweep_variables:
+            df[sweep_var] = simulation.tags[sweep_var]
+
+        return df
+
+    def finalize(self, all_data):
+
+        # concatenate all simulation data into one dataframe
+        selected = [data for sim, data in all_data.items()]  # grab data in tuple form
+        if len(selected) == 0:  # error out if no data selected
+            print("\nNo data have been returned... Exiting...")
+            return
+        df = pd.concat(selected, sort=False).reset_index(drop=True)  # concat into dataframe
+
+        fn = os.path.join(self.working_dir, self.exp_name)
+        if not os.path.exists(fn):
+            os.makedirs(fn)
+        print('\nSaving data to: %s' % fn)
+        df.to_csv(os.path.join(fn, 'events.csv'), index=False, index_label=False)
+
