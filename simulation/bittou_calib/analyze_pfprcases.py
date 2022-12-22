@@ -17,7 +17,6 @@ def parse_args():
 
     return parser.parse_args()
 
-
 # put the expt ID of step 04 here, with a good expt name
 
 working_dir = "."
@@ -25,7 +24,7 @@ working_dir = "."
 if __name__ == "__main__":
     SetupParser.init()
     args = parse_args()
-    exp_name = args.exp_name if args.exp_name else 'bittou_seasonal_calib'
+    exp_name = args.exp_name if args.exp_name else 'dori_seasonal'
 
     experiments = {
         exp_name: args.exp_id,
