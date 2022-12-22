@@ -1,7 +1,7 @@
 import os
 
 
-def load_box_paths(user_path=None, parser_default='HPC'):
+def load_box_paths(user_path=None, parser_default='NUCLUSTER'):
 
     if not user_path :
         user_path = os.path.expanduser('~')
